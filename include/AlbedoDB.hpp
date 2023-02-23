@@ -3,36 +3,36 @@
 #include <albedodb_backend.h>
 
 #include <memory>
+#include <string>
+#include <cassert>
 
 namespace Albedo {
 namespace DB {
 
-    class Query;
-
 	class Database // Singleton
 	{
-	private:
-        Database() :
+	public:
+        Database(std::string_view host,
+                std::string_view user,
+                std::string_view password,
+                std::string_view database,
+                uint32_t port = ALBEDODB_DEFAULT_PORT) :
             m_database{ std::make_unique<Backend>() }
         {
-
+            m_database->log_in(host, user, password, database, port);
         }
         ~Database() noexcept = default;
+
     public:
-        static Database& instance()
+        std::shared_ptr<Query> query(std::string_view _SQL_select, bool bStore = true)
         {
-            static Database singleton;
-            return singleton;
+            if (bStore) return m_database->select_and_store(_SQL_select);
+            else return m_database->select_and_use(_SQL_select);
         }
 
-        inline std::shared_ptr<Query> query(std::string_view _SQL_select, bool store) // If not store result you have to use mysql_fecth_row() to get result
+        void command(std::string_view _SQL)
         {
-            return std::make_shared<Query>(store, *this, _SQL_select);
-        }
-
-        inline void exec(std::string_view _SQL)
-        {
-            m_database->exec(_SQL);
+            m_database->execute_SQL(_SQL);
         }
 
         Database(const Database&) = delete;

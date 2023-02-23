@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <mysql.h>
@@ -6,70 +5,90 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <memory>
 
 namespace Albedo {
 namespace DB
 {
+	const uint32_t ALBEDODB_DEFAULT_PORT = 3306;
+
+	class Backend;
+
+	class Query
+	{
+	public:
+		inline MYSQL_RES* const get() const { return m_result; }
+
+		Query() = delete;
+		Query(bool store, Backend& host, std::string_view _SQL);
+		~Query();
+	private:
+		Backend& host;
+		MYSQL_RES* m_result = nullptr;
+	};
 
 	class Backend
 	{
-		class Query
-		{
-			friend class Backend;
-		public:
-			inline MYSQL_RES* const get() const { return m_result; }
-
-			Query() = delete;
-			Query(bool store, Backend& host, std::string_view _SQL)
-				:host{ host }
-			{
-				host._check_error(mysql_real_query(host.m_MySQL, _SQL.data(), _SQL.size()));
-				if (store)
-				{
-					m_result = mysql_store_result(host.m_MySQL);
-					if (!m_result) throw std::runtime_error("Failed to store result");
-				}
-				else
-				{
-					m_result = mysql_use_result(host.m_MySQL);
-					if (!m_result) throw std::runtime_error("Failed to use result");
-				}	
-			}
-			~Query()
-			{
-				mysql_free_result(m_result);
-			}
-		private:
-			Backend& host;
-			MYSQL_RES* m_result = nullptr;
-		};
-
+		friend class Query;
 	public:
 		// Interface
-		inline std::shared_ptr<Query> query(std::string_view _SQL_select, bool store) // If not store result you have to use mysql_fecth_row() to get result
+		 // If not store result you have to use mysql_fecth_row() to get result
+		std::shared_ptr<Query> select_and_store(std::string_view _SQL)
 		{
-			return std::make_shared<Query>(store, *this, _SQL_select);
+			return std::make_shared<Query>(true, *this, _SQL);
 		}
 
-		inline void exec(std::string_view _SQL)
+		std::shared_ptr<Query> select_and_use(std::string_view _SQL)
+		{
+			return std::make_shared<Query>(false, *this, _SQL);
+		}
+
+		void execute_SQL(std::string_view _SQL)
 		{
 			_check_error(mysql_real_query(m_MySQL, _SQL.data(), _SQL.size()));
 		}
 
-		inline const char* ping()
+		const char* ping()
 		{
 			if (mysql_ping(m_MySQL)) return mysql_error(m_MySQL);
 			else return "Ping success!";
 		}
 
+		void set_option(mysql_option option, const void* arg)
+		{
+			_check_error(mysql_options(m_MySQL, option, arg));
+		}
+
+		void log_in(std::string_view host,
+							std::string_view user,
+							std::string_view password,
+							std::string_view database,
+							uint32_t port = ALBEDODB_DEFAULT_PORT)
+		{
+			mysql_real_connect(m_MySQL,
+				host.data(), 
+				user.data(),
+				password.data(),
+				database.data(),
+				port,
+				NULL,	//unix_socket
+				NULL	// client flag
+			);
+		}
+
 	protected:
 		MYSQL* m_MySQL = nullptr;
-		
+
+		uint8_t opt_connect_timeout = 5;
+		bool		 opt_reconnect = true;
 	public:
-		Backend() = delete;
+		//Backend() = delete;
 		Backend()
-		{
+		{	
 			m_MySQL = mysql_init(nullptr);
+
+			set_option(MYSQL_OPT_CONNECT_TIMEOUT, &opt_connect_timeout);
+			set_option(MYSQL_OPT_RECONNECT, &opt_reconnect);
 		}
 
 		~Backend()
@@ -78,14 +97,10 @@ namespace DB
 			mysql_server_end();
 		}
 
-		Backend(const Database&) = delete;
-		Backend& operator = (const Database&) = delete;
+		Backend(const Backend&) = delete;
+		Backend& operator = (const Backend&) = delete;
 
-		inline void _set_option(mysql_option option, const void* arg)
-		{
-			_check_error(mysql_options(m_MySQL, option, arg));
-		}
-
+	private:
 		inline void _check_error(int res)
 		{
 			if (res) throw std::runtime_error(mysql_error(m_MySQL));
