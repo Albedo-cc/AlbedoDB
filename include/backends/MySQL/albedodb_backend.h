@@ -4,6 +4,8 @@
 
 #include <stdexcept>
 #include <string>
+#include <vector>
+#include <unordered_map>
 #include <string_view>
 #include <memory>
 
@@ -16,8 +18,36 @@ namespace DB
 
 	class Query
 	{
+		struct Result
+		{
+			friend class Query;
+			struct Cursor 
+			{
+				size_t position = 0; // From 1 to N + 1
+				operator size_t() { return position; }
+			}; 
+
+			using Field = std::string;
+			using Data = std::string;
+			using Item = std::unordered_map<Field, Data>;
+			using Table = std::vector<Item>;
+
+			size_t size() const { return m_result.size(); }
+			bool empty() const { return m_result.empty(); }
+
+			Cursor search_unique(std::string_view field, std::string_view unique_value);
+			Item fetch(Cursor cursor);
+
+			Table::iterator begin() { return m_result.begin(); }
+			Table::iterator end() { return m_result.end(); }
+			Table::const_iterator begin() const { return m_result.begin(); }
+			Table::const_iterator end() const { return m_result.end(); }	
+		private:
+			Table m_result;
+		};
 	public:
-		inline MYSQL_RES* const get() const { return m_result; }
+		std::shared_ptr<Result> get_result() const;
+		MYSQL_RES* const get_result_handle() const { return m_result; }
 
 		Query() = delete;
 		Query(bool store, Backend& host, std::string_view _SQL);

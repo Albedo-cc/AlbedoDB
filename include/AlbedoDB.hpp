@@ -24,10 +24,11 @@ namespace DB {
         ~Database() noexcept = default;
 
     public:
-        std::shared_ptr<Query> query(std::string_view _SQL_select, bool bStore = true)
+        // You must use query() when do SELECT, SHOW, DESCRIBE, EXPLAIN, CHECK TABLE, e.g.
+        std::shared_ptr<Query> query(std::string_view _SQL_select, bool bStore = false)
         {
-            if (bStore) return m_database->select_and_store(_SQL_select);
-            else return m_database->select_and_use(_SQL_select);
+            if (!bStore) return m_database->select_and_use(_SQL_select);
+            else return m_database->select_and_store(_SQL_select);
         }
 
         void command(std::string_view _SQL)
