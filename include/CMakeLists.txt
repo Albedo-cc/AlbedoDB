@@ -21,7 +21,7 @@ AlbedoDB_load_backend()
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     $<TARGET_FILE:MySQL>
-    $<TARGET_FILE_DIR:${ALBEDODB_PARENT_PROJECT}>)
+    $<TARGET_FILE_DIR:${ALBEDO_LIBS_SHARED_TARGET}>)
 
 source_group("" FILES AlbedoDB.hpp)
 source_group("backend" FILES ${ALBEDODB_BACKEND_FILES})

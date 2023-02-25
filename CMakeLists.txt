@@ -1,9 +1,7 @@
 cmake_minimum_required(VERSION 3.21.0)
 
-if (NOT PROJECT_NAME)
-    message(FATAL_ERROR "[Albedo DB] >> This library must have a parent project!")
-else()
-    set(ALBEDODB_PARENT_PROJECT ${PROJECT_NAME})
+if (NOT ALBEDO_LIBS_SHARED_TARGET)
+    message(FATAL_ERROR "[Albedo DB] >> This library must be introduced by an executable object!")
 endif()
 
 project("AlbedoDB"
