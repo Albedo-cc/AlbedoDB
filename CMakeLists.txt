@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21.0)
 
 if (NOT ALBEDO_LIBS_SHARED_TARGET)
-    message(FATAL_ERROR "[Albedo DB] >> This library must be introduced by an executable object!")
+    message(FATAL_ERROR "[Albedo DB] >> You have to set ALBEDO_LIBS_SHARED_TARGET, which is an executable object using this library!")
 endif()
 
 project("AlbedoDB"
