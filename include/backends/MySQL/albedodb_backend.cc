@@ -32,14 +32,14 @@ namespace DB {
 		std::vector<Result::Field> fields(m_result->field_count);
 		// Initialize Fields
 		for (auto& field : fields) field = mysql_fetch_field(m_result)->name;
-
+		
 		MYSQL_ROW data = nullptr;
 		for (size_t row = 0; data = mysql_fetch_row(m_result); ++row)
 		{
 			auto& kv = result->m_result.emplace_back();
 			for (size_t col = 0; col < fields.size(); ++col)
 			{
-				kv.insert({ fields[col], data[col] });
+				kv.insert({ fields[col], (data[col]? data[col] : "")});
 			}
 		}
 		return result;
