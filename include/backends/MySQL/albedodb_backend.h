@@ -37,6 +37,7 @@ namespace DB
 
 			Cursor search_unique(std::string_view field, std::string_view unique_value);
 			Item fetch(Cursor cursor);
+			Item fetch_first() { return fetch({ 1 }); }
 
 			Table::iterator begin() { return m_result.begin(); }
 			Table::iterator end() { return m_result.end(); }
